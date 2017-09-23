@@ -1,15 +1,13 @@
 require 'ridley'
-
 require 'set'
-
 
 class SyncServers
   attr_reader :status
 
-  def initialize knives, cached_nodes={}
+  def initialize(knives, cached_nodes = {})
     @knives  = knives
     @started = Time.now
-    @cached_nodes = Hash.new { |h,k| h[k] = 0.0 }
+    @cached_nodes = Hash.new { |h, k| h[k] = 0.0 }
     @cached_nodes.merge! cached_nodes
     @status = sync_servers.merge \
       elapsed: Time.now - @started rescue nil
@@ -19,15 +17,13 @@ class SyncServers
     Hash[@cached_nodes]
   end
 
-
-private
+  private
 
   def ridleys
     @ridleys ||= @knives.map do |knife|
       Ridley.from_chef_config(knife, ssl: { verify: false })
     end
   end
-
 
   def search_nodes
     @clients = {}
@@ -37,7 +33,7 @@ private
       clients = ridley.client.all
 
       begin
-        nodes = ridley.partial_search(:node, '*:*', %w[ ohai_time ])
+        nodes = ridley.partial_search(:node, '*:*', %w[ohai_time])
       rescue
         puts 'WARNING: No partial search, skipping knife'
         bad_ridleys << i
@@ -58,9 +54,8 @@ private
     return @search_nodes
   end
 
-
   def updated_and_deleted_nodes
-    @all_nodes ||= search_nodes.group_by(&:name).pmap do |name, copies|
+    @all_nodes ||= search_nodes.group_by(&:name).pmap do |_name, copies|
       copies.sort_by do |c|
         time = c.automatic.ohai_time
         time.is_a?(Float) ? time : -1.0
@@ -75,7 +70,6 @@ private
 
     return @updated_nodes, @deleted_nodes
   end
-
 
   def sync_servers
     nodes, deleted = updated_and_deleted_nodes
@@ -136,5 +130,4 @@ private
       num_nodes: nodes.length
     }
   end
-
 end

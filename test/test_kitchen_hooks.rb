@@ -5,13 +5,10 @@ require_relative '../lib/kitchen_hooks'
 
 Thread.abort_on_exception = true
 
-
 class TestKitchenHooks < MiniTest::Test
-  def setup
-  end
+  def setup; end
 
-  def teardown
-  end
+  def teardown; end
 
   def test_fails
     assert false

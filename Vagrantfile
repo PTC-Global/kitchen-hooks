@@ -1,17 +1,18 @@
 #!/usr/bin/env ruby
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+
 Vagrant.configure('2') do |config|
   config.vm.provider :virtualbox do |vbox|
-    vbox.customize [ 'modifyvm', :id, '--memory', 4096 ]
-    vbox.customize [ 'modifyvm', :id, '--cpus', 4 ]
+    vbox.customize ['modifyvm', :id, '--memory', 4096]
+    vbox.customize ['modifyvm', :id, '--cpus', 4]
   end
 
   config.vm.define 'precise-test' do |node|
     node.vm.box = 'bento/ubuntu-12.04'
     node.vm.hostname = 'test'
     node.vm.network :private_network, ip: '10.10.10.10'
-    node.vm.provision :shell, inline: <<-END
+    node.vm.provision :shell, inline: <<-SCRIPT
       set -x
       set -e
       RUBY_VERSION=2.2
@@ -31,14 +32,14 @@ Vagrant.configure('2') do |config|
 
       dpkg -i /vagrant/tasks/package/artifacts/*.deb
       kitchen_hooks art
-    END
+    SCRIPT
   end
 
   config.vm.define 'trusty-test' do |node|
     node.vm.box = 'bento/ubuntu-14.04'
     node.vm.hostname = 'test'
     node.vm.network :private_network, ip: '10.10.10.11'
-    node.vm.provision :shell, inline: <<-END
+    node.vm.provision :shell, inline: <<-SCRIPT
       set -x
       set -e
       RUBY_VERSION=2.2
@@ -58,6 +59,6 @@ Vagrant.configure('2') do |config|
 
       dpkg -i /vagrant/tasks/package/artifacts/*.deb
       kitchen_hooks art
-    END
+    SCRIPT
   end
 end

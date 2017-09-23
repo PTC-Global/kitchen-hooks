@@ -1,7 +1,6 @@
 require 'pathname'
 require 'thread'
 require 'json'
-
 require 'hipchat'
 require 'daybreak'
 require 'sinatra/base'
@@ -9,14 +8,13 @@ require 'sinatra/base'
 require_relative 'helpers'
 require_relative 'metadata'
 
-
 module KitchenHooks
   class App < Sinatra::Application
     set :root, File.join(KitchenHooks::ROOT, 'web')
 
     enable :sessions
 
-    def self.db! path=@@db_path
+    def self.db!(path = @@db_path)
       if defined? @@db
         @@db.flush
         @@db.close
@@ -25,7 +23,7 @@ module KitchenHooks
       @@db = Daybreak::DB.new path
     end
 
-    def self.tmp! dir ; @@tmp = dir end
+    def self.tmp!(dir); @@tmp = dir end
 
     def self.close!
       @@sync_worker.kill if defined? @@sync_worker
@@ -54,9 +52,8 @@ module KitchenHooks
       end
     end
 
-
-    def self.config! config
-      $stderr.puts 'ENV: %s' % JSON::pretty_generate(ENV.to_hash)
+    def self.config!(config)
+      $stderr.puts 'ENV: %s' % JSON.pretty_generate(ENV.to_hash)
       @@config = config
       @@hipchat = nil
       if config['hipchat']
@@ -91,54 +88,49 @@ module KitchenHooks
     end
 
     get '/favicon.ico' do
-      send_file File.join(settings.root, 'favicon.ico'), \
-        :disposition => 'inline'
+      send_file File.join(settings.root, 'favicon.ico'), disposition: 'inline'
     end
 
     get %r|/app/(.*)| do |fn|
-      send_file File.join(settings.root, 'app', fn), \
-        :disposition => 'inline'
+      send_file File.join(settings.root, 'app', fn), disposition: 'inline'
     end
 
     post '/' do
       request.body.rewind
-      event = JSON::parse request.body.read rescue nil
+      event = JSON.parse request.body.read rescue nil
       event['repository']['protocol'] = @@git_protocol
       @@backlog.push event
     end
 
+    private
 
+    def db; @@db end
 
-  private
-    def self.db ; @@db end
+    def tmp; @@tmp ||= '/tmp' end
 
-    def self.tmp ; @@tmp ||= '/tmp' end
+    def knives; @@knives ||= [] end
 
-    def self.knives ; @@knives ||= [] end
-
-    def self.hipchat message, color
+    def hipchat(message, color)
       return if @@hipchat.nil?
       @@hipchat[@@hipchat_room].send @@hipchat_nick, message, \
         color: color, notify: false, message_format: 'html'
     end
 
-
-    def self.notify entry
+    def notify(entry)
       color = case entry[:type]
-      when 'failure' ; 'red'
-      when 'release' ; 'purple'
-      when 'unsynced' ; 'yellow'
-      else ; 'green'
-      end
+              when 'failure' then 'red'
+              when 'release' then 'purple'
+              when 'unsynced'then 'yellow'
+              else 'green'
+              end
       hipchat notification(entry), color
     end
-
 
     # error == nil   => success
     # error == true  => success
     # error == false => nop
     # otherwise      => failure
-    def self.mark event, type, error=nil
+    def mark(event, type, error = nil)
       return if error == false
       error = nil if error == true
       entry = { type: type, event: event }
@@ -157,8 +149,7 @@ module KitchenHooks
       notify entry
     end
 
-
-    def self.process_release version=KitchenHooks::VERSION
+    def process_release(version = KitchenHooks::VERSION)
       return if db['meta_version'] == version
       db.lock do
         db.set! 'meta_version', version
@@ -166,8 +157,7 @@ module KitchenHooks
       mark version, 'release'
     end
 
-
-    def self.process_sync
+    def process_sync
       db!
       sync_servers = SyncServers.new knives
       sync = sync_servers.status
@@ -177,8 +167,7 @@ module KitchenHooks
       db!
     end
 
-
-    def self.process event
+    def process(event)
       Thread.abort_on_exception = true
 
       if event.nil? # JSON parse failed
