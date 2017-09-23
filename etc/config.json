@@ -2,6 +2,6 @@
   "sync_interval": null,
   "hipchat": null,
   "knives": {
-    "chef-z": "~/.chef/chef-z.rb"
+    "chef-z": "~/.chef/config.rb"
   }
 }
